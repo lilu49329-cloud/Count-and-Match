@@ -1,0 +1,6 @@
+# requirements.txt cho dự án HTML5 + Phaser
+# Dự án này không sử dụng Python package, requirements.txt chỉ để tham khảo nếu tích hợp backend hoặc deploy Python.
+# Nếu chỉ chạy game trên trình duyệt, file này có thể để trống hoặc ghi chú như dưới đây.
+
+# Không yêu cầu cài đặt Python package nào.
+# Chạy trực tiếp trên trình duyệt với HTML5, JavaScript, Phaser 3 CDN.
