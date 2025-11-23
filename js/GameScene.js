@@ -354,17 +354,18 @@ export default class GameScene extends Phaser.Scene {
 				   const iconGapX = -6;
 				   if (count <= 4) {
 					   // CASE 1–4: 1 dòng, icon to, luôn căn giữa thẻ
-					   const scaleSmallX = (cardW * 0.88) / (count * assetW);
-					   const scaleSmallY = (cardH * 0.98) / assetH;
-					   const scaleSmall = Math.min(scaleSmallX, scaleSmallY);
-					   const totalWidth = count * assetW * scaleSmall;
-					   const startX = colNumX - totalWidth / 2 + (assetW * scaleSmall) / 2;
-					   const startY = y;
-					   for (let k = 0; k < count; k++) {
-						   let icon = this.add.image(startX + k * (assetW * scaleSmall + iconGapX), startY, item.asset).setOrigin(0.5);
-						   icon.setScale(scaleSmall);
-					   }
-				   } else {
+					const scaleSmallX = (cardW * 0.9) / (count * assetW);
+					const scaleSmallY = (cardH * 1.05) / assetH;
+					const scaleSmall = Math.min(scaleSmallX, scaleSmallY);
+					const totalWidth = count * assetW * scaleSmall;
+					const SHIFT_RIGHT = cardW * 0.10;
+					const startX = colNumX - totalWidth / 2 + (assetW * scaleSmall) / 2 + SHIFT_RIGHT;
+					const startY = y;
+					for (let k = 0; k < count; k++) {
+						let icon = this.add.image(startX + k * (assetW * scaleSmall + iconGapX), startY, item.asset).setOrigin(0.5);
+						icon.setScale(scaleSmall);
+					}
+				} else {
 					   // CASE 5–9: 2 dòng, mỗi dòng max 4 icon, căn giữa block icon
 					   let row1 = Math.ceil(count / 2);
 					   let row2 = count - row1;
@@ -373,18 +374,21 @@ export default class GameScene extends Phaser.Scene {
 					   const rows = [row1, row2];
 					   const rowMax = Math.max(row1, row2);
 					   // Scale cho cả 2 dòng
-					   const scaleWideX = (cardW * 1.45) / (rowMax * assetW);
-					   const scaleWideY = (cardH * 0.95) / assetH;
+					   const scaleWideX = (cardW * 1.15) / (rowMax * assetW);
+					   const scaleWideY = (cardH * 1.05) / assetH;
 					   const scale = Math.min(scaleWideX, scaleWideY, 1.0);
 					   // Tính lại totalHeight và rowGap
 					   // rowGap: khoảng cách giữa 2 dòng icon (âm = chồng lên, dương = cách xa)
 					   const rowGap = -(assetH * scale * 0.75); // chỉnh thông số này để thay đổi khoảng cách
 					   const totalHeight = assetH * scale * 2 + rowGap;
+					   // SHIFT_RIGHT: dịch block icon sang phải (ví dụ 10% chiều rộng thẻ)
+					   const SHIFT_RIGHT = cardW * 0.10;
 					   let startY = y - totalHeight / 2 + (assetH * scale) / 2;
 					   for (let r = 0; r < rows.length; r++) {
 						   const nInRow = rows[r];
 						   const totalWidth = nInRow * assetW * scale;
-						   const startX = colNumX - totalWidth / 2 + (assetW * scale) / 2;
+						   // Thêm SHIFT_RIGHT vào startX để dịch block icon sang phải
+						   const startX = colNumX - totalWidth / 2 + (assetW * scale) / 2 + SHIFT_RIGHT;
 						   for (let k = 0; k < nInRow; k++) {
 							   let icon = this.add.image(startX + k * (assetW * scale + iconGapX), startY, item.asset).setOrigin(0.5);
 							   icon.setScale(scale);
