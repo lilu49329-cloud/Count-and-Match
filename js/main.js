@@ -1,5 +1,9 @@
 
+
+
+import OverlayScene from './OverlayScene.js';
 import GameScene from './GameScene.js';
+import EndGameScene from './EndGameScene.js';
 
 const config = {
     type: Phaser.AUTO,
@@ -7,7 +11,7 @@ const config = {
     height: 600,
     backgroundColor: '#f0f8ff',
     parent: 'game-container',
-    scene: [GameScene],
+    scene: [OverlayScene, GameScene, EndGameScene],
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH

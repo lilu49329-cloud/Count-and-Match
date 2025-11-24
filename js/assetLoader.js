@@ -41,7 +41,24 @@ export function preloadAssets(scene) {
     scene.load.image('red', 'assets/red.png');
     scene.load.image('rabbit', 'assets/rabbit.png');
 
-/*for (let i = 1; i <= 9; i++) {
+    scene.load.image('bg_end1', 'assets/bg_end1.png');
+    scene.load.image('bg_end2', 'assets/bg_end2.png');
+    scene.load.image('bg_end3', 'assets/bg_end3.png');
+    scene.load.image('bg_end5', 'assets/bg_end5.png');
+    scene.load.image('bg_end6', 'assets/bg_end6.png');
+    scene.load.image('bg_end7', 'assets/bg_end7.png');
+    scene.load.svg('replay_endgame', 'assets/replay_endgame.svg');
+    scene.load.svg('exit_endgame', 'assets/exit.svg');
+
+// Intro SVG assets cho OverlayScene (dùng convert SVG động)
+scene.load.image("intro_bg_1",   "assets/intro/bge1.png");
+scene.load.image("intro_bg_2",   "assets/intro/bge2.png");
+scene.load.image("intro_bg_3",   "assets/intro/bge3.png");
+scene.load.image("intro_bg_4",   "assets/intro/bge4.png");
+scene.load.image("intro_bg_5",   "assets/intro/bge5.png");
+scene.load.image("intro_bg_6",   "assets/intro/bge6.png");
+scene.load.image("intro_bg_7",   "assets/intro/bge7.png");
+  /*for (let i = 1; i <= 9; i++) {
         scene.load.image(`number_${i}`, `assets/number_${i}.png`);
     }*/    
 }
