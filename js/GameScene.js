@@ -18,10 +18,10 @@ const HOLE_RADIUS_RATIO        = (26 / 2) / 225;
 const HOLE_ALONG_FACTOR        = 1.0;
 
 // Độ dày line (tính từ đường kính lỗ)
-const LINE_THICKNESS_FACTOR    = 0.6;
+const LINE_THICKNESS_FACTOR    = 0.7;
 
 // CẮT THÊM 1 CHÚT Ở HAI ĐẦU LINE ĐỂ KHÔNG VƯỢT QUÁ LỖ
-const LINE_TRIM_FACTOR         = 0.0; // để 0 cho dễ hiểu
+const LINE_TRIM_FACTOR         = 0.45; // để 0 cho dễ hiểu
 
 // LỆCH TÂM LỖ THEO HƯỚNG ĐƯỜNG CHÉO
 // 0 → không lệch, >0 → lệch rõ hơn
@@ -202,6 +202,8 @@ export default class GameScene extends Phaser.Scene {
   create() {
     const width = 900, height = 600;
 
+    console.log('[GAME DEBUG] size', { width, height, dpr: window.devicePixelRatio });
+
     // =====================
     // A) NHẠC NỀN TOÀN GAME
     // =====================
@@ -222,6 +224,11 @@ export default class GameScene extends Phaser.Scene {
 
     const levelIdx = this.level; // 0,1,2
     const currentLevel = this.levels[levelIdx];
+
+    console.log('[LEVEL DEBUG]', {
+      levelIdx,
+      currentLevel
+    });
 
     // Load background nếu có
     if (currentLevel && currentLevel.background && this.textures.exists && this.textures.exists(currentLevel.background)) {
@@ -266,7 +273,6 @@ export default class GameScene extends Phaser.Scene {
       const isLastLevel = nextIndex >= this.levels.length; // vượt qua level cuối
 
       if (isLastLevel) {
-        // Không auto chuyển nữa, chỉ chuyển khi bấm nút → đang ở đây rồi
         this.scene.start('EndGameScene');
       } else {
         this.scene.restart({ level: nextIndex });
@@ -278,6 +284,8 @@ export default class GameScene extends Phaser.Scene {
 
     // Trộn vị trí cột đồ vật
     const shuffled = Phaser.Utils.Array.Shuffle([...items]);
+
+    console.log('[ITEMS DEBUG]', { items, shuffled });
 
     // --- MAIN BOARD ---
     const boardOrigW = 1603;
@@ -329,18 +337,17 @@ export default class GameScene extends Phaser.Scene {
         card = this.add.zone(colObjX, y, cardW, cardH).setOrigin(0.5);
       }
 
-      // LUÔN dùng TEXT, không dùng PNG số
       const numStr = String(item.number);
 
       this.add.text(colObjX, y, numStr, {
         fontFamily: 'Fredoka',
-        fontSize: `${Math.round(cardH * 0.65)}px`,   // tỉ lệ theo chiều cao thẻ
-        color: '#ff006e',                            // hồng đậm
+        fontSize: `${Math.round(cardH * 0.65)}px`,
+        color: '#ff006e',
         fontStyle: '900',
         align: 'center',
         stroke: '#ffffff',
         strokeThickness: Math.round(cardH * 0.08),
-        resolution: 2,                               // text nét hơn
+        resolution: 2,
       }).setOrigin(0.5);
 
       card.setInteractive({ useHandCursor: true });
@@ -348,7 +355,9 @@ export default class GameScene extends Phaser.Scene {
       this.numbers.push(card);
     });
 
-    // Thẻ hình bên phải
+    // ========================
+    // Thẻ hình bên phải (ICON BỊ MỜ → LOG DEBUG Ở ĐÂY)
+    // ========================
     shuffled.forEach((item, i) => {
       const y = baseY + i * ((225 * scaleBG * cardScale) + cardGap);
       const cardW = 669 * scaleBG * cardScale, cardH = 225 * scaleBG * cardScale;
@@ -362,25 +371,46 @@ export default class GameScene extends Phaser.Scene {
         card = this.add.zone(colNumX, y, cardW, cardH).setOrigin(0.5);
       }
 
-      // Vẽ icon theo số lượng (1 hoặc 2)
       if (this.textures.exists && this.textures.exists(item.asset)) {
-        // Ép filter NEAREST cho texture icon để giảm mờ khi scale
         const tex = this.textures.get(item.asset);
         if (tex && tex.setFilter) {
           tex.setFilter(Phaser.Textures.NEAREST);
         }
+        // DEBUG filter
+        if (tex && tex.source && tex.source[0]) {
+          const src = tex.source[0];
+          console.log(
+            '[FILTER]',
+            item.asset,
+            src.scaleMode === Phaser.ScaleModes.NEAREST ? 'NEAREST' : 'LINEAR',
+            src.scaleMode
+          );
+        }
 
         const count = item.number; // 1 hoặc 2
+
         let tempIcon = this.add.image(0, 0, item.asset);
         const assetW = tempIcon.width || 1;
         const assetH = tempIcon.height || 1;
         tempIcon.destroy();
+
         const iconGapX = -6;
 
-        // Icon to: rộng 110%, cao 115% so với thẻ (theo bạn đang để)
         const scaleSmallX = (cardW * 1.10) / (count * assetW);
         const scaleSmallY = (cardH * 1.15) / assetH;
         const scaleSmall = Math.min(scaleSmallX, scaleSmallY);
+
+        // DEBUG scale icon cơ bản
+        console.log('[ICON BASE]', item.asset, {
+          assetW,
+          assetH,
+          cardW,
+          cardH,
+          count,
+          scaleSmallX,
+          scaleSmallY,
+          scaleSmall
+        });
 
         const totalWidth = count * assetW * scaleSmall;
         const SHIFT_RIGHT = cardW * 0.10;
@@ -393,7 +423,19 @@ export default class GameScene extends Phaser.Scene {
             startY,
             item.asset
           ).setOrigin(0.5);
+
           icon.setScale(scaleSmall);
+
+          // DEBUG từng icon instance
+          console.log('[ICON INSTANCE]', item.asset, {
+            index: k,
+            scaleX: icon.scaleX,
+            scaleY: icon.scaleY,
+            displayW: icon.displayWidth,
+            displayH: icon.displayHeight,
+            ratioW: icon.displayWidth / assetW,
+            ratioH: icon.displayHeight / assetH
+          });
         }
       }
 
@@ -416,7 +458,6 @@ export default class GameScene extends Phaser.Scene {
     this.dragStartIdx = null;
     this.matches = Array(4).fill(false);
 
-    // Bàn tay gợi ý
     const showHintHand = () => {
       if (this.textures && this.textures.exists && this.textures.exists('hand')) {
         let hintIdx = null, objHintIdx = null;
@@ -489,7 +530,6 @@ export default class GameScene extends Phaser.Scene {
       const dy = pointer.y - start.y;
       const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 
-      // === LOGIC MỚI: cắt đúng 1 bán kính phía đầu số ===
       const rVisual = this.getHoleRadius(startCard);
       const cut = rVisual;
       const lineThickness = rVisual * 2 * LINE_THICKNESS_FACTOR;
@@ -528,7 +568,6 @@ export default class GameScene extends Phaser.Scene {
             this.sound.play('sfx_correct', { volume: 1 });
           }
 
-          // Đổi texture 2 card thành thẻ vàng
           if (startCard.setTexture) {
             startCard.setTexture('card_yellow');
             startCard.setDisplaySize(startCard.customData.cardW, startCard.customData.cardH);
@@ -552,10 +591,9 @@ export default class GameScene extends Phaser.Scene {
             endCard.setTexture('card_yellow2');
             endCard.setDisplaySize(endCard.customData.cardW, endCard.customData.cardH);
             if (this.textures.exists('card_glow')) {
-              const glowScale = 1.12;
               const glow = this.add.image(endCard.x, endCard.y, 'card_glow')
                 .setOrigin(0.5)
-                .setDisplaySize(endCard.customData.cardW * glowScale, endCard.customData.cardH * glowScale)
+                .setDisplaySize(endCard.customData.cardW * 1.12, endCard.customData.cardH * 1.12)
                 .setAlpha(1);
               glow.setDepth(endCard.depth ? endCard.depth - 1 : 0);
               this.tweens.add({
@@ -568,7 +606,6 @@ export default class GameScene extends Phaser.Scene {
             }
           }
 
-          // Chốt line thành permanent
           if (this.dragLine) {
             const dyCenter = endCard.y - startCard.y;
             const slopeDirStart = -Math.sign(dyCenter);
@@ -581,7 +618,6 @@ export default class GameScene extends Phaser.Scene {
             const dy = end.y - start.y;
             const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 
-            // === LOGIC MỚI: line bắt đầu/ kết thúc đúng mép lỗ ===
             const rVisual = this.getHoleRadius(startCard);
             const cut = rVisual;
             const lineThickness = rVisual * 2 * LINE_THICKNESS_FACTOR;
@@ -621,17 +657,17 @@ export default class GameScene extends Phaser.Scene {
       this.isDragging = false;
       this.dragStartIdx = null;
 
-      // HOÀN THÀNH 4 CẶP → CHỈ PHÁT VOICE, KHÔNG TỰ ĐỘNG CHUYỂN MÀN
+      // Hoàn thành 4 cặp
       if (this.matches.every(m => m)) {
-        const nextIndex   = this.level + 1;
-        const isLastLevel = nextIndex >= this.levels.length;
-
         if (this.snd && this.snd.complete) {
           this.snd.complete.play({ volume: 0.8 });
         }
 
+        // Đợi 3s rồi mới phát voice_complete
         if (this.sound && this.sound.play) {
-          this.sound.play(isLastLevel ? 'voice_end' : 'voice_complete', { volume: 1 });
+          this.time.delayedCall(3000, () => {
+            this.sound.play('voice_complete', { volume: 1 });
+          });
         }
       }
     });

@@ -17,8 +17,6 @@ export function preloadAssets(scene) {
     scene.load.image('bg6', 'assets/bg6.png');
     scene.load.image('bg7', 'assets/bg7.png');
 
-    scene.load.image('char1', 'assets/char1.png');
-    scene.load.image('char2', 'assets/char2.png');
 
     scene.load.image('card', 'assets/card.png');
     scene.load.image('card2', 'assets/card2.png');
@@ -31,16 +29,16 @@ export function preloadAssets(scene) {
     scene.load.image('hand', 'assets/hand.png');
     scene.load.svg('replay_svg', 'assets/replay.svg');
     scene.load.svg('next_svg', 'assets/next.svg');
-    scene.load.image('bear', 'assets/bear.png');
-    scene.load.image('marble', 'assets/marble.png');
-    scene.load.image('ball', 'assets/ball.png');
-    scene.load.image('flower', 'assets/flower.png');
-    scene.load.image('drum', 'assets/drum.png');
-    scene.load.image('babie', 'assets/babie.png');
-    scene.load.image('clock', 'assets/clock.png');
-    scene.load.image('yellow', 'assets/yellow.png');
-    scene.load.image('red', 'assets/red.png');
-    scene.load.image('rabbit', 'assets/rabbit.png');
+    scene.load.svg('bear', 'assets/bear.svg');
+    scene.load.svg('marble', 'assets/marble.svg');
+    scene.load.svg('ball', 'assets/ball.svg');
+    scene.load.svg('flower', 'assets/flower.svg');
+    scene.load.svg('drum', 'assets/drum.svg');
+    scene.load.svg('babie', 'assets/babie.svg');
+    scene.load.svg('clock', 'assets/clock.svg');
+    scene.load.svg('yellow', 'assets/yellow.svg');
+    scene.load.svg('red', 'assets/red.svg');
+    scene.load.svg('rabbit', 'assets/rabbit.svg');
 
     scene.load.image('bg_end1', 'assets/bg_end1.png');
     scene.load.image('bg_end2', 'assets/bg_end2.png');

@@ -36,8 +36,8 @@ function waitForFredoka() {
 window.onload = async function () {
     const container = document.getElementById('game-container');
     if (container) {
-        container.style.width = '100vw';
-        container.style.height = '100vh';
+        container.style.width = 'auto';
+        container.style.height = 'auto';
         container.style.display = 'flex';
         container.style.justifyContent = 'center';
         container.style.alignItems = 'center';
