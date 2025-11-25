@@ -313,7 +313,9 @@ export default class GameScene extends Phaser.Scene {
     const totalCardH = 4 * (225 * scaleBG * cardScale) + 3 * cardGap;
     const baseY = boardY - totalCardH / 2 + (225 * scaleBG * cardScale) / 2;
 
-    // Thẻ số bên trái
+    // ========================
+    // Thẻ số bên trái (DÙNG TEXT 100%)
+    // ========================
     items.forEach((item, i) => {
       const y = baseY + i * ((225 * scaleBG * cardScale) + cardGap);
       const cardW = 669 * scaleBG * cardScale, cardH = 225 * scaleBG * cardScale;
@@ -327,22 +329,19 @@ export default class GameScene extends Phaser.Scene {
         card = this.add.zone(colObjX, y, cardW, cardH).setOrigin(0.5);
       }
 
-      const numAsset = `number_${item.number}`;
-      if (this.textures.exists && this.textures.exists(numAsset)) {
-        const numContent = this.add.image(colObjX, y, numAsset).setOrigin(0.5);
-        const scaleNum = Math.min((cardH * 0.7) / numContent.height, (cardW * 0.7) / numContent.width, 1);
-        numContent.setScale(scaleNum);
-      } else {
-        // Fallback: vẽ số dạng text giống mẫu "1" hồng
-        this.add.text(colObjX, y, `${item.number}`, {
-          fontFamily: 'Fredoka',
-          fontSize: `${Math.round(140 * scaleBG)}px`, // to, tròn
-          color: '#ff006e',           // hồng đậm
-          fontStyle: 'bold',
-          align: 'center',
-          strokeThickness: 0,         // không viền
-        }).setOrigin(0.5);
-      }
+      // LUÔN dùng TEXT, không dùng PNG số
+      const numStr = String(item.number);
+
+      this.add.text(colObjX, y, numStr, {
+        fontFamily: 'Fredoka',
+        fontSize: `${Math.round(cardH * 0.65)}px`,   // tỉ lệ theo chiều cao thẻ
+        color: '#ff006e',                            // hồng đậm
+        fontStyle: '900',
+        align: 'center',
+        stroke: '#ffffff',
+        strokeThickness: Math.round(cardH * 0.08),
+        resolution: 2,                               // text nét hơn
+      }).setOrigin(0.5);
 
       card.setInteractive({ useHandCursor: true });
       card.customData = { index: i, number: item.number, cardW, cardH, glow: null };
@@ -378,13 +377,16 @@ export default class GameScene extends Phaser.Scene {
         tempIcon.destroy();
         const iconGapX = -6;
 
-        const scaleSmallX = (cardW * 1.1) / (count * assetW);
+        // Icon to: rộng 110%, cao 115% so với thẻ (theo bạn đang để)
+        const scaleSmallX = (cardW * 1.10) / (count * assetW);
         const scaleSmallY = (cardH * 1.15) / assetH;
         const scaleSmall = Math.min(scaleSmallX, scaleSmallY);
+
         const totalWidth = count * assetW * scaleSmall;
         const SHIFT_RIGHT = cardW * 0.10;
         const startX = colNumX - totalWidth / 2 + (assetW * scaleSmall) / 2 + SHIFT_RIGHT;
         const startY = y;
+
         for (let k = 0; k < count; k++) {
           let icon = this.add.image(
             startX + k * (assetW * scaleSmall + iconGapX),
