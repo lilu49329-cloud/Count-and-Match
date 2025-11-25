@@ -53,7 +53,9 @@ export default class OverlayScene extends Phaser.Scene {
     bg.y = screenCenterY - AOI_center_scaled;
 
     // Overlay làm sáng nhẹ toàn màn
-    this.add.rectangle(0, 0, width, height, 0xffffff, 0.10).setOrigin(0, 0);
+    this.add
+      .rectangle(0, 0, width, height, 0xffffff, 0.10)
+      .setOrigin(0, 0);
 
     // ======================
     // CHUẨN BỊ NHẠC NỀN CHUNG
@@ -91,12 +93,55 @@ export default class OverlayScene extends Phaser.Scene {
     };
 
     // ======================
-    // BỎ AUTO CHUYỂN MÀN
+    // NÚT START Ở GIỮA BÊN DƯỚI MÀN HÌNH
     // ======================
-    // Không dùng delayedCall nữa – chờ bé chạm.
 
-    // Bé chạm bất kỳ đâu trên màn -> bắt đầu game
-    this.input.once("pointerdown", startGame);
+    // scale nút dựa trên width giống BG để đồng bộ tỉ lệ
+    const baseButtonScale = width / DESIGN_WIDTH; // có thể nhân thêm 1.1 / 0.9 nếu muốn to/nhỏ hơn
 
+    // margin từ mép dưới màn hình lên (theo thiết kế ~180px)
+    const BUTTON_BOTTOM_MARGIN_DESIGN = 180;
+    const buttonY = height - BUTTON_BOTTOM_MARGIN_DESIGN * baseButtonScale;
+
+    const startButton = this.add
+      .image(width / 2, buttonY, "btn_start")
+      .setOrigin(0.5, 0.5)
+      .setScale(baseButtonScale)
+      .setDepth(10);
+
+    startButton.setInteractive({ useHandCursor: true });
+
+    // hiệu ứng hover nhẹ (desktop)
+    startButton.on("pointerover", () => {
+      this.tweens.add({
+        targets: startButton,
+        scale: baseButtonScale * 1.05,
+        duration: 120,
+        ease: "Quad.easeOut",
+      });
+    });
+
+    startButton.on("pointerout", () => {
+      this.tweens.add({
+        targets: startButton,
+        scale: baseButtonScale,
+        duration: 120,
+        ease: "Quad.easeOut",
+      });
+    });
+
+    // click vào nút -> start game
+    startButton.on("pointerdown", () => {
+      startGame();
+    });
+
+    // ======================
+    // (OPTION) Vẫn cho phép chạm bất kỳ đâu để start – cho chắc ăn trên mobile
+    // ======================
+    this.input.once("pointerdown", (pointer, currentlyOver) => {
+      // nếu đã click nút rồi thì thôi
+      if (this._started) return;
+      startGame();
+    });
   }
 }

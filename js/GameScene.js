@@ -7,25 +7,25 @@
 const HOLE_OFFSET_X_RATIO      = 0.10;   // chỉnh ngang: tăng/giảm để lỗ dịch vào/ra theo chiều ngang
 
 // chỉnh dọc: 0.5 = giữa, <0.5 = lên, >0.5 = xuống
-const HOLE_OFFSET_Y_LEFT_RATIO  = 0.455; // thẻ số (card)
-const HOLE_OFFSET_Y_RIGHT_RATIO = 0.455; // thẻ hình (card2)
+const HOLE_OFFSET_Y_LEFT_RATIO  = 0.55; // thẻ số (card)
+const HOLE_OFFSET_Y_RIGHT_RATIO = 0.35; // thẻ hình (card2)
 
 // Lỗ tròn trên card gốc cao 225px, đường kính ~26px
 const HOLE_RADIUS_RATIO        = (26 / 2) / 225;
 
 // Độ sâu line chui vào lỗ (tính theo bán kính lỗ hiển thị)
-// (hiện logic mới đã dùng cut = rVisual, 2 hằng dưới gần như không dùng nữa)
 const HOLE_ALONG_FACTOR        = 1.0;
 
 // Độ dày line (tính từ đường kính lỗ)
 const LINE_THICKNESS_FACTOR    = 0.7;
 
 // CẮT THÊM 1 CHÚT Ở HAI ĐẦU LINE ĐỂ KHÔNG VƯỢT QUÁ LỖ
-const LINE_TRIM_FACTOR         = 0.45; // để 0 cho dễ hiểu
+// 0 = chạm đúng mép lỗ; tăng lên thì line ngắn lại hai đầu
+const LINE_TRIM_FACTOR         = 0.45;
 
 // LỆCH TÂM LỖ THEO HƯỚNG ĐƯỜNG CHÉO
 // 0 → không lệch, >0 → lệch rõ hơn
-const HOLE_SLOPE_OFFSET_RATIO  = 0.06;
+const HOLE_SLOPE_OFFSET_RATIO  = 0.0;
 
 // ----------------- LOGIC RIÊNG CHO BÀI 1–2 -----------------
 // 10 asset dùng cho trò 1–2
@@ -169,9 +169,14 @@ export default class GameScene extends Phaser.Scene {
 
         const endCard = this.objects[objIdx];
 
+        // Đường chéo: luôn cho thẻ số lệch lên, thẻ hình lệch xuống một chút
         const dyCenter = endCard.y - startCard.y;
-        const slopeDirStart = -Math.sign(dyCenter); // thẻ số đi ngược hướng
-        const slopeDirEnd   =  Math.sign(dyCenter); // thẻ hình đi cùng hướng
+        let slopeDirStart = 0;
+        let slopeDirEnd   = 0;
+        if (dyCenter !== 0) {
+          slopeDirStart = -1; // thẻ số lệch lên
+          slopeDirEnd   =  1; // thẻ hình lệch xuống
+        }
 
         const start = this.getHolePos(startCard, 'right', slopeDirStart);
         const end   = this.getHolePos(endCard,   'left',  slopeDirEnd);
@@ -180,9 +185,12 @@ export default class GameScene extends Phaser.Scene {
         const dy = end.y - start.y;
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 
-        // === LOGIC MỚI: cắt đúng 1 bán kính ở mỗi đầu ===
+        // === LOGIC CẮT: mép lỗ + trim thêm hai đầu ===
         const rVisual = this.getHoleRadius(startCard);
-        const cut = rVisual; // cắt từ tâm ra mép lỗ
+        const baseCut  = rVisual;
+        const extraCut = rVisual * LINE_TRIM_FACTOR;
+        const cut = baseCut + extraCut;
+
         const lineThickness = rVisual * 2 * LINE_THICKNESS_FACTOR;
 
         const bodyLength = Math.max(dist - 2 * cut, 0);
@@ -207,7 +215,6 @@ export default class GameScene extends Phaser.Scene {
     // =====================
     // A) NHẠC NỀN TOÀN GAME
     // =====================
-    // Lấy bgm chung, nếu chưa có thì add + play.
     let bgm = this.sound.get('bgm_main');
     if (!bgm) {
       bgm = this.sound.add('bgm_main', { loop: true, volume: 0.28 });
@@ -230,7 +237,6 @@ export default class GameScene extends Phaser.Scene {
       currentLevel
     });
 
-    // Load background nếu có
     if (currentLevel && currentLevel.background && this.textures.exists && this.textures.exists(currentLevel.background)) {
       this.add.image(width / 2, height / 2, currentLevel.background)
         .setOrigin(0.5)
@@ -239,9 +245,8 @@ export default class GameScene extends Phaser.Scene {
       this.cameras.main.setBackgroundColor("#e1f5fe");
     }
 
-    // Load character nếu có
     const charW = 364, charH = 676;
-    const scaleChar = scaleBG;
+    const scaleChar = scaleBG * 1.3;
     const charX = 70 + (charW * scaleChar) / 2, charY = height - 10;
     if (currentLevel && currentLevel.character && this.textures.exists && this.textures.exists(currentLevel.character)) {
       this.add.image(charX, charY, currentLevel.character).setOrigin(0.5, 1).setScale(scaleChar);
@@ -258,7 +263,6 @@ export default class GameScene extends Phaser.Scene {
     }, replayBtnSize);
 
     this.nextBtn = this.createButton(width * 0.95, height * 0.07, '', 'next_svg', null, () => {
-      // Nếu chưa hoàn thành thì nhắc hoàn thành
       if (!this.isLevelComplete()) {
         if (this.snd && this.snd.needFinish) {
           this.snd.needFinish.play({ volume: 0.8 });
@@ -270,7 +274,7 @@ export default class GameScene extends Phaser.Scene {
       }
 
       const nextIndex   = this.level + 1;
-      const isLastLevel = nextIndex >= this.levels.length; // vượt qua level cuối
+      const isLastLevel = nextIndex >= this.levels.length;
 
       if (isLastLevel) {
         this.scene.start('EndGameScene');
@@ -282,7 +286,6 @@ export default class GameScene extends Phaser.Scene {
     // ----- CÁC MÀN CHƠI BÌNH THƯỜNG -----  
     const items = currentLevel.items;
 
-    // Trộn vị trí cột đồ vật
     const shuffled = Phaser.Utils.Array.Shuffle([...items]);
 
     console.log('[ITEMS DEBUG]', { items, shuffled });
@@ -356,7 +359,7 @@ export default class GameScene extends Phaser.Scene {
     });
 
     // ========================
-    // Thẻ hình bên phải (ICON BỊ MỜ → LOG DEBUG Ở ĐÂY)
+    // Thẻ hình bên phải
     // ========================
     shuffled.forEach((item, i) => {
       const y = baseY + i * ((225 * scaleBG * cardScale) + cardGap);
@@ -376,7 +379,6 @@ export default class GameScene extends Phaser.Scene {
         if (tex && tex.setFilter) {
           tex.setFilter(Phaser.Textures.NEAREST);
         }
-        // DEBUG filter
         if (tex && tex.source && tex.source[0]) {
           const src = tex.source[0];
           console.log(
@@ -387,7 +389,7 @@ export default class GameScene extends Phaser.Scene {
           );
         }
 
-        const count = item.number; // 1 hoặc 2
+        const count = item.number;
 
         let tempIcon = this.add.image(0, 0, item.asset);
         const assetW = tempIcon.width || 1;
@@ -400,7 +402,6 @@ export default class GameScene extends Phaser.Scene {
         const scaleSmallY = (cardH * 1.15) / assetH;
         const scaleSmall = Math.min(scaleSmallX, scaleSmallY);
 
-        // DEBUG scale icon cơ bản
         console.log('[ICON BASE]', item.asset, {
           assetW,
           assetH,
@@ -426,7 +427,6 @@ export default class GameScene extends Phaser.Scene {
 
           icon.setScale(scaleSmall);
 
-          // DEBUG từng icon instance
           console.log('[ICON INSTANCE]', item.asset, {
             index: k,
             scaleX: icon.scaleX,
@@ -522,7 +522,11 @@ export default class GameScene extends Phaser.Scene {
 
       const startCard = this.numbers[this.dragStartIdx];
       const dyCenter = pointer.y - startCard.y;
-      const slopeDirStart = -Math.sign(dyCenter);
+
+      let slopeDirStart = 0;
+      if (dyCenter !== 0) {
+        slopeDirStart = -1; // đường chéo: đầu bên thẻ số lệch lên
+      }
 
       const start = this.getHolePos(startCard, 'right', slopeDirStart);
 
@@ -531,7 +535,10 @@ export default class GameScene extends Phaser.Scene {
       const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 
       const rVisual = this.getHoleRadius(startCard);
-      const cut = rVisual;
+      const baseCut  = rVisual;
+      const extraCut = rVisual * LINE_TRIM_FACTOR;
+      const cut = baseCut + extraCut;
+
       const lineThickness = rVisual * 2 * LINE_THICKNESS_FACTOR;
 
       const bodyLength = Math.max(dist - 2 * cut, 0);
@@ -608,8 +615,13 @@ export default class GameScene extends Phaser.Scene {
 
           if (this.dragLine) {
             const dyCenter = endCard.y - startCard.y;
-            const slopeDirStart = -Math.sign(dyCenter);
-            const slopeDirEnd   =  Math.sign(dyCenter);
+
+            let slopeDirStart = 0;
+            let slopeDirEnd   = 0;
+            if (dyCenter !== 0) {
+              slopeDirStart = -1; // thẻ số lệch lên
+              slopeDirEnd   =  1; // thẻ hình lệch xuống
+            }
 
             const start = this.getHolePos(startCard, 'right', slopeDirStart);
             const end   = this.getHolePos(endCard,   'left',  slopeDirEnd);
@@ -619,7 +631,10 @@ export default class GameScene extends Phaser.Scene {
             const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 
             const rVisual = this.getHoleRadius(startCard);
-            const cut = rVisual;
+            const baseCut  = rVisual;
+            const extraCut = rVisual * LINE_TRIM_FACTOR;
+            const cut = baseCut + extraCut;
+
             const lineThickness = rVisual * 2 * LINE_THICKNESS_FACTOR;
 
             const bodyLength = Math.max(dist - 2 * cut, 0);
@@ -657,13 +672,11 @@ export default class GameScene extends Phaser.Scene {
       this.isDragging = false;
       this.dragStartIdx = null;
 
-      // Hoàn thành 4 cặp
       if (this.matches.every(m => m)) {
         if (this.snd && this.snd.complete) {
           this.snd.complete.play({ volume: 0.8 });
         }
 
-        // Đợi 3s rồi mới phát voice_complete
         if (this.sound && this.sound.play) {
           this.time.delayedCall(3000, () => {
             this.sound.play('voice_complete', { volume: 1 });

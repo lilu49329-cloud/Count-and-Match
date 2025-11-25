@@ -18,6 +18,10 @@ export function preloadAssets(scene) {
     scene.load.image('bg7', 'assets/bg7.png');
 
 
+    scene.load.svg('char1', 'assets/char1.svg');
+    scene.load.svg('char2', 'assets/char2.svg');
+    scene.load.svg('btn_start','assets/button start.svg')
+
     scene.load.image('card', 'assets/card.png');
     scene.load.image('card2', 'assets/card2.png');
     scene.load.image('card_yellow', 'assets/card_yellow.png');
