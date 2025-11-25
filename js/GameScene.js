@@ -1,3 +1,7 @@
+// LƯU Ý: Trong config Phaser (new Phaser.Game) nên đặt:
+// render: { pixelArt: true, antialias: false }
+// để PNG bớt mờ khi scale.
+
 // === TỰ CHỈNH TỈ LỆ TRỰC TIẾP, KHÔNG QUAN TÂM SCALE ===
 // 0.0 = mép trái, 1.0 = mép phải (tính từ mép phải tới tâm lỗ)
 const HOLE_OFFSET_X_RATIO      = 0.10;   // chỉnh ngang: tăng/giảm để lỗ dịch vào/ra theo chiều ngang
@@ -10,13 +14,14 @@ const HOLE_OFFSET_Y_RIGHT_RATIO = 0.455; // thẻ hình (card2)
 const HOLE_RADIUS_RATIO        = (26 / 2) / 225;
 
 // Độ sâu line chui vào lỗ (tính theo bán kính lỗ hiển thị)
-const HOLE_ALONG_FACTOR        = 0.9;
+// (hiện logic mới đã dùng cut = rVisual, 2 hằng dưới gần như không dùng nữa)
+const HOLE_ALONG_FACTOR        = 1.0;
 
 // Độ dày line (tính từ đường kính lỗ)
 const LINE_THICKNESS_FACTOR    = 0.6;
 
 // CẮT THÊM 1 CHÚT Ở HAI ĐẦU LINE ĐỂ KHÔNG VƯỢT QUÁ LỖ
-const LINE_TRIM_FACTOR         = 0.22; // chỉnh tăng = line ngắn hơn
+const LINE_TRIM_FACTOR         = 0.0; // để 0 cho dễ hiểu
 
 // LỆCH TÂM LỖ THEO HƯỚNG ĐƯỜNG CHÉO
 // 0 → không lệch, >0 → lệch rõ hơn
@@ -39,7 +44,6 @@ const ALL_ASSETS_12 = [
 
 // label hiển thị dưới thẻ hình (nếu bạn không cần text thì cho '' hết cũng được)
 const LABEL_BY_ASSET = {
-  // ví dụ:
   // flower: 'Bông hoa',
 };
 
@@ -61,6 +65,7 @@ function shuffle(arr) {
 }
 
 // Tạo list level theo logic 1–2
+// CHỈ TRẢ VỀ 3 LEVEL CHƠI, KHÔNG CÓ 'intro' / 'outro'
 function buildOneTwoLevels() {
   const shuffledAssets = shuffle(ALL_ASSETS_12);
 
@@ -93,8 +98,7 @@ function buildOneTwoLevels() {
     };
   });
 
-  // Thêm intro / outro cho khớp code cũ
-  return ['intro', ...levelsCore, 'outro'];
+  return levelsCore; // [lv1, lv2, lv3]
 }
 
 import { preloadAssets } from './assetLoader.js';
@@ -104,7 +108,7 @@ export default class GameScene extends Phaser.Scene {
     super({ key: 'GameScene' });
 
     // DÙNG LOGIC 1–2 MỚI
-    this.levels = buildOneTwoLevels();
+    this.levels = buildOneTwoLevels(); // [0,1,2]
   }
 
   preload() {
@@ -112,7 +116,8 @@ export default class GameScene extends Phaser.Scene {
   }
 
   init(data) {
-    this.level = data.level || 1;
+    // level index: 0,1,2
+    this.level = (typeof data.level === 'number') ? data.level : 0;
   }
 
   // Helper: scale bán kính lỗ theo chiều cao card
@@ -175,14 +180,14 @@ export default class GameScene extends Phaser.Scene {
         const dy = end.y - start.y;
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 
+        // === LOGIC MỚI: cắt đúng 1 bán kính ở mỗi đầu ===
         const rVisual = this.getHoleRadius(startCard);
-        const rAlong  = rVisual * HOLE_ALONG_FACTOR;
-        const trim    = rVisual * LINE_TRIM_FACTOR;
+        const cut = rVisual; // cắt từ tâm ra mép lỗ
         const lineThickness = rVisual * 2 * LINE_THICKNESS_FACTOR;
 
-        const bodyLength = Math.max(dist - 2 * (rAlong + trim), 0);
-        const startBodyX = start.x + (dx / dist) * (rAlong + trim);
-        const startBodyY = start.y + (dy / dist) * (rAlong + trim);
+        const bodyLength = Math.max(dist - 2 * cut, 0);
+        const startBodyX = start.x + (dx / dist) * cut;
+        const startBodyY = start.y + (dy / dist) * cut;
 
         const line = this.add.image(startBodyX, startBodyY, 'line_glow')
           .setOrigin(0, 0.5)
@@ -195,18 +200,27 @@ export default class GameScene extends Phaser.Scene {
   }
 
   create() {
-    // --- PHÁT NHẠC NỀN ---
-    if (this.sound && this.sound.add && !this.bgm) {
-      this.bgm = this.sound.add('bgm_main', { loop: true, volume: 0.5 });
+    const width = 900, height = 600;
+
+    // =====================
+    // A) NHẠC NỀN TOÀN GAME
+    // =====================
+    // Lấy bgm chung, nếu chưa có thì add + play.
+    let bgm = this.sound.get('bgm_main');
+    if (!bgm) {
+      bgm = this.sound.add('bgm_main', { loop: true, volume: 0.28 });
+      bgm.play();
+    } else if (!bgm.isPlaying) {
+      bgm.play();
     }
+    this.bgm = bgm;
 
     // --- BACKGROUND & CHARACTER TỪ LEVEL CONFIG ---
-    const width = 900, height = 600;
     const bgW = 2160, bgH = 1620;
     const scaleBG_BG = Math.max(width / bgW, height / bgH);
     const scaleBG = Math.min(width / bgW, height / bgH);
 
-    const levelIdx = (typeof this.level === 'number' ? this.level : 0);
+    const levelIdx = this.level; // 0,1,2
     const currentLevel = this.levels[levelIdx];
 
     // Load background nếu có
@@ -231,33 +245,35 @@ export default class GameScene extends Phaser.Scene {
     // Nút replay / next
     const replayBtnSize = Math.round(90 * scaleBG);
     const nextBtnSize = Math.round(90 * scaleBG);
+
     this.replayBtn = this.createButton(width * 0.05, height * 0.07, '', 'replay_svg', null, () => {
       window.location.reload();
     }, replayBtnSize);
+
     this.nextBtn = this.createButton(width * 0.95, height * 0.07, '', 'next_svg', null, () => {
-      if (this.isLevelComplete()) {
-        let nextLevel = (typeof this.level === 'number') ? this.level + 1 : 1;
-        if (nextLevel >= this.levels.length) nextLevel = this.levels.length - 1;
-        this.scene.restart({ level: nextLevel });
-      } else {
+      // Nếu chưa hoàn thành thì nhắc hoàn thành
+      if (!this.isLevelComplete()) {
         if (this.snd && this.snd.needFinish) {
           this.snd.needFinish.play({ volume: 0.8 });
         }
         if (this.sound && this.sound.play) {
           this.sound.play('voice_need_finish', { volume: 1 });
         }
+        return;
+      }
+
+      const nextIndex   = this.level + 1;
+      const isLastLevel = nextIndex >= this.levels.length; // vượt qua level cuối
+
+      if (isLastLevel) {
+        // Không auto chuyển nữa, chỉ chuyển khi bấm nút → đang ở đây rồi
+        this.scene.start('EndGameScene');
+      } else {
+        this.scene.restart({ level: nextIndex });
       }
     }, nextBtnSize);
 
-    // Nếu là màn kết thúc (outro), chuyển sang EndGameScene
-    if (currentLevel === 'outro') {
-      this.scene.start('EndGameScene');
-      return;
-    }
-
-    // Đã có OverlayScene riêng, không cần overlay intro ở đây nữa
-
-    // ----- CÁC MÀN CHƠI BÌNH THƯỜNG -----
+    // ----- CÁC MÀN CHƠI BÌNH THƯỜNG -----  
     const items = currentLevel.items;
 
     // Trộn vị trí cột đồ vật
@@ -317,10 +333,14 @@ export default class GameScene extends Phaser.Scene {
         const scaleNum = Math.min((cardH * 0.7) / numContent.height, (cardW * 0.7) / numContent.width, 1);
         numContent.setScale(scaleNum);
       } else {
+        // Fallback: vẽ số dạng text giống mẫu "1" hồng
         this.add.text(colObjX, y, `${item.number}`, {
           fontFamily: 'Fredoka',
-          fontSize: `${Math.round(120 * scaleBG)}px`,
-          color: '#ff69b4', fontStyle: 'bold', align: 'center'
+          fontSize: `${Math.round(140 * scaleBG)}px`, // to, tròn
+          color: '#ff006e',           // hồng đậm
+          fontStyle: 'bold',
+          align: 'center',
+          strokeThickness: 0,         // không viền
         }).setOrigin(0.5);
       }
 
@@ -345,6 +365,12 @@ export default class GameScene extends Phaser.Scene {
 
       // Vẽ icon theo số lượng (1 hoặc 2)
       if (this.textures.exists && this.textures.exists(item.asset)) {
+        // Ép filter NEAREST cho texture icon để giảm mờ khi scale
+        const tex = this.textures.get(item.asset);
+        if (tex && tex.setFilter) {
+          tex.setFilter(Phaser.Textures.NEAREST);
+        }
+
         const count = item.number; // 1 hoặc 2
         let tempIcon = this.add.image(0, 0, item.asset);
         const assetW = tempIcon.width || 1;
@@ -352,22 +378,28 @@ export default class GameScene extends Phaser.Scene {
         tempIcon.destroy();
         const iconGapX = -6;
 
-        const scaleSmallX = (cardW * 0.9) / (count * assetW);
-        const scaleSmallY = (cardH * 1.05) / assetH;
+        const scaleSmallX = (cardW * 1.1) / (count * assetW);
+        const scaleSmallY = (cardH * 1.15) / assetH;
         const scaleSmall = Math.min(scaleSmallX, scaleSmallY);
         const totalWidth = count * assetW * scaleSmall;
         const SHIFT_RIGHT = cardW * 0.10;
         const startX = colNumX - totalWidth / 2 + (assetW * scaleSmall) / 2 + SHIFT_RIGHT;
         const startY = y;
         for (let k = 0; k < count; k++) {
-          let icon = this.add.image(startX + k * (assetW * scaleSmall + iconGapX), startY, item.asset).setOrigin(0.5);
+          let icon = this.add.image(
+            startX + k * (assetW * scaleSmall + iconGapX),
+            startY,
+            item.asset
+          ).setOrigin(0.5);
           icon.setScale(scaleSmall);
         }
       }
 
       this.add.text(colNumX, y + cardH / 2 - 32 * scaleBG, item.label || '', {
         fontFamily: 'Fredoka', fontSize: `${Math.round(48 * scaleBG)}px`,
-        color: '#222', align: 'center'
+        color: '#222', align: 'center',
+        stroke: '#fff', strokeThickness: 6,
+        shadow: { offsetX: 0, offsetY: 2, color: '#000', blur: 4, fill: true }
       }).setOrigin(0.5, 0.5);
 
       card.setInteractive({ useHandCursor: true });
@@ -455,14 +487,14 @@ export default class GameScene extends Phaser.Scene {
       const dy = pointer.y - start.y;
       const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 
+      // === LOGIC MỚI: cắt đúng 1 bán kính phía đầu số ===
       const rVisual = this.getHoleRadius(startCard);
-      const rAlong  = rVisual * HOLE_ALONG_FACTOR;
-      const trim    = rVisual * LINE_TRIM_FACTOR;
+      const cut = rVisual;
       const lineThickness = rVisual * 2 * LINE_THICKNESS_FACTOR;
 
-      const bodyLength = Math.max(dist - 2 * (rAlong + trim), 0);
-      const startBodyX = start.x + (dx / dist) * (rAlong + trim);
-      const startBodyY = start.y + (dy / dist) * (rAlong + trim);
+      const bodyLength = Math.max(dist - 2 * cut, 0);
+      const startBodyX = start.x + (dx / dist) * cut;
+      const startBodyY = start.y + (dy / dist) * cut;
 
       this.dragLine.x = startBodyX;
       this.dragLine.y = startBodyY;
@@ -493,8 +525,6 @@ export default class GameScene extends Phaser.Scene {
           if (this.sound && this.sound.play) {
             this.sound.play('sfx_correct', { volume: 1 });
           }
-          // Confetti effect removed for Phaser 3.60+ compatibility
-          // You can add a temporary sprite or flash here if you want a visual effect
 
           // Đổi texture 2 card thành thẻ vàng
           if (startCard.setTexture) {
@@ -549,14 +579,14 @@ export default class GameScene extends Phaser.Scene {
             const dy = end.y - start.y;
             const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 
+            // === LOGIC MỚI: line bắt đầu/ kết thúc đúng mép lỗ ===
             const rVisual = this.getHoleRadius(startCard);
-            const rAlong  = rVisual * HOLE_ALONG_FACTOR;
-            const trim    = rVisual * LINE_TRIM_FACTOR;
+            const cut = rVisual;
             const lineThickness = rVisual * 2 * LINE_THICKNESS_FACTOR;
 
-            const bodyLength = Math.max(dist - 2 * (rAlong + trim), 0);
-            const startBodyX = start.x + (dx / dist) * (rAlong + trim);
-            const startBodyY = start.y + (dy / dist) * (rAlong + trim);
+            const bodyLength = Math.max(dist - 2 * cut, 0);
+            const startBodyX = start.x + (dx / dist) * cut;
+            const startBodyY = start.y + (dy / dist) * cut;
 
             this.dragLine.x = startBodyX;
             this.dragLine.y = startBodyY;
@@ -589,21 +619,18 @@ export default class GameScene extends Phaser.Scene {
       this.isDragging = false;
       this.dragStartIdx = null;
 
+      // HOÀN THÀNH 4 CẶP → CHỈ PHÁT VOICE, KHÔNG TỰ ĐỘNG CHUYỂN MÀN
       if (this.matches.every(m => m)) {
-        this.time.delayedCall(2000, () => {
-          if (this.snd && this.snd.complete) {
-            this.snd.complete.play({ volume: 0.8 });
-          }
-          if (this.sound && this.sound.play) {
-            this.sound.play('voice_complete', { volume: 1 });
-          }
-          if (this.confettiEmitter) {
-            this.confettiEmitter.setTint([
-              0xff4081, 0xffeb3b, 0x40c4ff, 0x69f0ae
-            ]);
-            this.confettiEmitter.explode(40, 450, 260);
-          }
-        });
+        const nextIndex   = this.level + 1;
+        const isLastLevel = nextIndex >= this.levels.length;
+
+        if (this.snd && this.snd.complete) {
+          this.snd.complete.play({ volume: 0.8 });
+        }
+
+        if (this.sound && this.sound.play) {
+          this.sound.play(isLastLevel ? 'voice_end' : 'voice_complete', { volume: 1 });
+        }
       }
     });
   }
@@ -632,5 +659,3 @@ export default class GameScene extends Phaser.Scene {
     return Array.isArray(this.matches) ? this.matches.every(m => m) : false;
   }
 }
-
-

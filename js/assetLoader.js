@@ -8,6 +8,7 @@ export function preloadAssets(scene) {
         scene.load.audio('sfx_correct',      'assets/audio/sfx_correct.mp3');
         scene.load.audio('sfx_wrong',        'assets/audio/sfx_wrong.mp3');
         scene.load.audio('bgm_main',         'assets/audio/bgm_main.mp3');
+        scene.load.audio('voice_end',        'assets/audio/voice_end.mp3');
     scene.load.image('bg1', 'assets/bg1.png');
     scene.load.image('bg2', 'assets/bg2.png');
     scene.load.image('bg3', 'assets/bg3.png');
