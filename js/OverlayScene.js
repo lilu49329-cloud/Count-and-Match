@@ -6,13 +6,12 @@ export default class OverlayScene extends Phaser.Scene {
     super({ key: "OverlayScene" });
   }
 
-  // ======================
-  // PRELOAD: MÀN LOADING
-  // ======================
   preload() {
-    const cam    = this.cameras.main;
-    const width  = cam.width;
+    const cam = this.cameras.main;
+    const width = cam.width;
     const height = cam.height;
+
+    console.log("🟦 PRELOAD start – screen:", width, height);
 
     cam.setBackgroundColor("#e1f5fe");
 
@@ -41,6 +40,8 @@ export default class OverlayScene extends Phaser.Scene {
     });
 
     this.load.once("complete", () => {
+      console.log("🟩 PRELOAD done");
+      console.log("Has texture btn_start?", this.textures.exists("btn_start"));
       progressBar.destroy();
       progressBox.destroy();
       loadingText.destroy();
@@ -49,116 +50,73 @@ export default class OverlayScene extends Phaser.Scene {
     preloadAssets(this);
   }
 
-  // ======================
-  // CREATE: INTRO + UI
-  // ======================
   create() {
-    const width  = this.scale.width;
+    const width = this.scale.width;
     const height = this.scale.height;
 
-    // Kích thước file design background
+    console.log("🟦 CREATE start – screen:", width, height);
+    console.log("Texture check btn_start:", this.textures.exists("btn_start"));
+
     const DESIGN_W = 2160;
     const DESIGN_H = 1620;
 
-    // ====== BACKGROUND: COVER, GHIM MÉP TRÊN (KHÔNG BAO GIỜ MẤT CHỮ) ======
-    const INTRO_BG_KEYS = [
-      "intro_bg_1",
-      "intro_bg_2",
-      "intro_bg_3",
-      "intro_bg_4",
-      "intro_bg_5",
-      "intro_bg_6",
-      "intro_bg_7",
+    // ========== BACKGROUND ==========
+    const keys = [
+      "intro_bg_1","intro_bg_2","intro_bg_3",
+      "intro_bg_4","intro_bg_5","intro_bg_6","intro_bg_7"
     ];
-    const chosenBG = Phaser.Utils.Array.GetRandom(INTRO_BG_KEYS);
 
-    // scale cover: luôn kín màn, không méo
-    const scaleBG = Math.max(width / DESIGN_W, height / DESIGN_H);
+    const chosenBG = Phaser.Utils.Array.GetRandom(keys);
+    console.log("🎨 Chosen background:", chosenBG);
 
-    // 👇 KHÁC BIỆT CHÍNH Ở ĐÂY:
-    // - origin (0.5, 0) = neo theo mép TRÊN
-    // - y = 0  => mép trên hình luôn trùng mép trên màn → chữ phía trên không bao giờ bị cắt
-    const bg = this.add
-      .image(width / 2, 0, chosenBG)
-      .setOrigin(0.5, 0)
-      .setScale(scaleBG);
+    const bgScale = Math.max(width / DESIGN_W, height / DESIGN_H);
+    console.log("Background scale:", bgScale);
 
-    // Overlay sáng nhẹ
-    this.add.rectangle(0, 0, width, height, 0xffffff, 0.10).setOrigin(0, 0);
+    this.add.image(width / 2, 0, chosenBG).setOrigin(0.5, 0).setScale(bgScale);
 
-    // ======================
-    // NHẠC NỀN
-    // ======================
+    // ========== MUSIC ==========
     let bgm = this.sound.get("bgm_main");
     if (!bgm) {
-      bgm = this.sound.add("bgm_main", {
-        loop: true,
-        volume: 0.28,
-      });
+      bgm = this.sound.add("bgm_main", { loop: true, volume: 0.28 });
     }
     this.bgm = bgm;
 
-    // ======================
-    // HÀM START GAME
-    // ======================
     const startGame = () => {
+      console.log("▶️ Start Game triggered");
       if (this._started) return;
       this._started = true;
 
-      if (this.bgm && !this.bgm.isPlaying) {
-        this.bgm.play();
-      }
-
-      if (this.sound && this.sound.play) {
-        this.sound.play("voice_intro", { volume: 1 });
-      }
+      if (this.bgm && !this.bgm.isPlaying) this.bgm.play();
+      this.sound.play("voice_intro", { volume: 1 });
 
       this.scene.start("GameScene", { level: 0 });
     };
 
-    // ======================
-    // UI: NÚT BẮT ĐẦU + TEXT
-    // (GHIM THEO MÀN HÌNH, KHÔNG BỊ CROP)
-    // ======================
+    // ========== START BUTTON ==========
     const uiScale = Math.min(width / DESIGN_W, height / DESIGN_H);
+    const bottomMargin = 80 * uiScale;
 
-    const buttonY = height * 0.78; // ~3/4 chiều cao màn
+    console.log("UI scale:", uiScale);
+    console.log("Bottom margin:", bottomMargin);
+
+    const startY = height - bottomMargin;
+    console.log("Button Y position:", startY);
 
     const startButton = this.add
-      .image(width / 2, buttonY, "btn_start")
+      .image(width / 2, startY, "btn_start")
       .setOrigin(0.5)
-      .setScale(uiScale * 1.1)
-      .setDepth(10)
+      .setScale(uiScale * 1.2)
+      .setDepth(999)
       .setInteractive({ useHandCursor: true });
 
-    startButton.on("pointerover", () => {
-      this.tweens.add({
-        targets: startButton,
-        scale: uiScale * 1.16,
-        duration: 120,
-        ease: "Quad.easeOut",
-      });
-    });
-
-    startButton.on("pointerout", () => {
-      this.tweens.add({
-        targets: startButton,
-        scale: uiScale * 1.1,
-        duration: 120,
-        ease: "Quad.easeOut",
-      });
+    console.log("Button created:", {
+      x: startButton.x,
+      y: startButton.y,
+      scale: startButton.scale,
+      visible: startButton.visible,
+      alpha: startButton.alpha
     });
 
     startButton.on("pointerdown", startGame);
-
-    // Nếu sau này muốn thêm text "Nhấn để bắt đầu trò chơi" thì vẽ thêm ở đây:
-    // const infoText = this.add.text(...)
-
-    // ======================
-    // MOBILE: CHẠM BẤT KỲ ĐÂU CŨNG ĐƯỢC
-    // ======================
-    this.input.once("pointerdown", () => {
-      if (!this._started) startGame();
-    });
   }
 }
