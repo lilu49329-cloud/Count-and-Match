@@ -6,24 +6,24 @@ import { preloadAssets } from './assetLoader.js';
 // ========== CÁC HẰNG SỐ CĂN LỖ & LINE ==========
 // Dịch ngang: 0.0 = mép trái, 1.0 = mép phải
 // -> Muốn line chui vào sâu hơn thân thẻ thì GIẢM số này.
-const HOLE_OFFSET_X_RATIO = 0.22;
+const HOLE_OFFSET_X_RATIO = 0.2;
 
 // Dịch dọc: 0.5 = giữa; <0.5 lên trên; >0.5 xuống dưới
 // -> Muốn lỗ bên thẻ số lệch lên/xuống thì chỉnh 2 dòng dưới:
-const HOLE_OFFSET_Y_LEFT_RATIO  = 0.497;
-const HOLE_OFFSET_Y_RIGHT_RATIO = 0.497;
+const HOLE_OFFSET_Y_LEFT_RATIO  = 0.494;
+const HOLE_OFFSET_Y_RIGHT_RATIO = 0.494;
 
 // Bán kính lỗ = tỉ lệ theo chiều cao card gốc (225px, lỗ 32px)
 const HOLE_RADIUS_RATIO = (32 / 2) / 225;
 
 // Hai hằng dưới giờ gần như KHÔNG dùng cho chiều dài line,
 // chỉ giữ lại để không phá logic cũ (nếu muốn xài lại).
-const HOLE_ALONG_FACTOR = 0.8;
+const HOLE_ALONG_FACTOR = 0.85;
 
 // Độ dày line = 2 * bán kính * factor
 // -> Muốn line dày hơn: tăng LINE_THICKNESS_FACTOR
 // -> Muốn line mảnh lại: giảm nó xuống.
-const LINE_THICKNESS_FACTOR = 0.7;
+const LINE_THICKNESS_FACTOR = 0.85;
 
 const LINE_TRIM_FACTOR = 0.12;
 
@@ -33,10 +33,10 @@ const HOLE_SLOPE_OFFSET_RATIO = 0.0;
 // ====== HẰNG SỐ MỚI: CHỈNH TÂM 4 LỖ THẺ SỐ & 4 LỖ THẺ HÌNH ======
 // Tất cả đều là TỈ LỆ theo kích thước thẻ.
 const HOLE_OFFSET_NUMBER_DX = [0.139, 0.138, 0.138, 0.138];
-const HOLE_OFFSET_NUMBER_DY = [-0.0206, -0.0196, -0.0316, -0.0216];
+const HOLE_OFFSET_NUMBER_DY = [-0.020, -0.020, -0.030, -0.020];
 
 const HOLE_OFFSET_OBJECT_DX = [-0.138, -0.138, -0.138, -0.138];
-const HOLE_OFFSET_OBJECT_DY = [-0.0238, -0.027, -0.014, -0.018];
+const HOLE_OFFSET_OBJECT_DY = [-0.024, -0.026, -0.012, -0.016];
 
 // Asset tay hướng dẫn
 const HAND_ASSET_KEY = 'hand';
