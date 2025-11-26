@@ -38,18 +38,15 @@ export function preloadAssets(scene) {
     scene.load.svg('ball', 'assets/ball.svg');
     scene.load.svg('flower', 'assets/flower.svg');
     scene.load.svg('drum', 'assets/drum.svg');
-    scene.load.svg('babie', 'assets/babie.svg');
+    scene.load.image('babie', 'assets/babie.webp');
     scene.load.svg('clock', 'assets/clock.svg');
     scene.load.svg('yellow', 'assets/yellow.svg');
     scene.load.svg('red', 'assets/red.svg');
     scene.load.svg('rabbit', 'assets/rabbit.svg');
 
-    scene.load.image('bg_end1', 'assets/bg_end1.png');
-    scene.load.image('bg_end2', 'assets/bg_end2.png');
-    scene.load.image('bg_end3', 'assets/bg_end3.png');
-    scene.load.image('bg_end5', 'assets/bg_end5.png');
-    scene.load.image('bg_end6', 'assets/bg_end6.png');
-    scene.load.image('bg_end7', 'assets/bg_end7.png');
+    scene.load.svg('bg_end1', 'assets/bg_end1.svg');
+    scene.load.svg('bg_end2', 'assets/bg_end2.svg');
+   
     scene.load.svg('replay_endgame', 'assets/replay_endgame.svg');
     scene.load.svg('exit_endgame', 'assets/exit.svg');
 

@@ -2,55 +2,101 @@ import OverlayScene from './OverlayScene.js';
 import GameScene from './GameScene.js';
 import EndGameScene from './EndGameScene.js';
 
+// =========================
+//  CONFIG PHASER
+// =========================
 const config = {
-    type: Phaser.AUTO,
-    width: 900,
-    height: 600,
-    backgroundColor: '#f0f8ff',
-    parent: 'game-container',
-    scene: [OverlayScene, GameScene, EndGameScene],
-    scale: {
-        mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_BOTH
-    }
+  type: Phaser.AUTO,
+  parent: 'game-container',
+
+  // Canvas luôn bằng kích thước thật của màn hình
+  width: window.innerWidth,
+  height: window.innerHeight,
+
+  backgroundColor: '#00000000', // transparent
+
+  scale: {
+    mode: Phaser.Scale.FIT,       // auto zoom đúng tỉ lệ
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+  },
+
+  render: {
+    pixelArt: true,
+    antialias: false
+  },
+
+  scene: [OverlayScene, GameScene, EndGameScene]
 };
 
-// HÀM ĐỢI FONT FREDOKA LOAD XONG
-function waitForFredoka() {
-    // Nếu trình duyệt không hỗ trợ document.fonts thì bỏ qua, chạy luôn
-    if (!document.fonts || !document.fonts.load) {
-        return Promise.resolve();
-    }
+let game;
 
-    // Gọi load ít nhất 1 lần với font Fredoka
-    const loadPromise = document.fonts.load('400 24px "Fredoka"');
+// =========================
+//  SETUP CONTAINER
+// =========================
+function setupContainer() {
+  const container = document.getElementById('game-container');
+  if (!container) return;
 
-    // Đề phòng bị treo: timeout sau 1500ms thì cho game chạy luôn
-    const timeoutPromise = new Promise((resolve) => {
-        setTimeout(resolve, 1500);
-    });
+  document.documentElement.style.margin = '0';
+  document.documentElement.style.padding = '0';
+  document.body.style.margin = '0';
+  document.body.style.padding = '0';
 
-    return Promise.race([loadPromise, timeoutPromise]);
+  container.style.position = 'fixed';
+  container.style.inset = '0';
+  container.style.margin = '0';
+  container.style.padding = '0';
+  container.style.display = 'flex';
+  container.style.justifyContent = 'center';
+  container.style.alignItems = 'center';
+  container.style.background = 'transparent';
+  container.style.boxSizing = 'border-box';
+  container.style.overflow = 'hidden';
 }
 
-window.onload = async function () {
-    const container = document.getElementById('game-container');
-    if (container) {
-        container.style.width = 'auto';
-        container.style.height = 'auto';
-        container.style.display = 'flex';
-        container.style.justifyContent = 'center';
-        container.style.alignItems = 'center';
-        container.style.background = '#e1f5fe';
-    }
+// =========================
+//  KHÔNG CHỜ FONT – TỐI ƯU TỐC ĐỘ
+// =========================
+function waitForFredoka() {
+  // Trường hợp browser không hỗ trợ
+  if (!document.fonts || !document.fonts.load) return Promise.resolve();
 
-    // 🔹 ĐỢI FONT RỒI MỚI TẠO GAME
-    try {
-        await waitForFredoka();
-    } catch (e) {
-        // Có lỗi cũng kệ, vẫn cho game chạy
-        console.warn('Không đợi được font Fredoka, chạy game luôn.', e);
-    }
+  // Load nhanh – timeout để không delay
+  const loadPromise = document.fonts.load('400 20px Fredoka');
+  const timeout = new Promise(res => setTimeout(res, 50));
 
-    new Phaser.Game(config);
-};
+  return Promise.race([loadPromise, timeout]);
+}
+
+// =========================
+//  START GAME
+// =========================
+async function initGame() {
+  setupContainer();
+
+  try {
+    await waitForFredoka();
+  } catch (e) {
+    console.warn('Không load kịp font, chạy game luôn.');
+  }
+
+  game = new Phaser.Game(config);
+
+  // Fix canvas margin (Safari / Cốc Cốc hay lỗi)
+  setTimeout(() => {
+    const canvas = document.querySelector('#game-container canvas');
+    if (canvas) {
+      canvas.style.margin = '0';
+      canvas.style.padding = '0';
+      canvas.style.display = 'block';
+    }
+  }, 20);
+
+  // Resize khi xoay ngang / đổi cửa sổ
+  window.addEventListener('resize', () => {
+    if (!game) return;
+    game.scale.resize(window.innerWidth, window.innerHeight);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', initGame);

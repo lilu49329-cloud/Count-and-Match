@@ -6,63 +6,91 @@ export default class OverlayScene extends Phaser.Scene {
     super({ key: "OverlayScene" });
   }
 
+  // ======================
+  // PRELOAD: MÀN LOADING
+  // ======================
   preload() {
+    const cam    = this.cameras.main;
+    const width  = cam.width;
+    const height = cam.height;
+
+    cam.setBackgroundColor("#e1f5fe");
+
+    const loadingText = this.add.text(width / 2, height / 2 - 60, "Đang tải...", {
+      fontFamily: "Fredoka",
+      fontSize: "28px",
+      color: "#333",
+    }).setOrigin(0.5);
+
+    const progressBox = this.add.graphics();
+    const progressBar = this.add.graphics();
+
+    progressBox.fillStyle(0x000000, 0.25);
+    progressBox.fillRoundedRect(width / 2 - 170, height / 2 - 20, 340, 40, 10);
+
+    this.load.on("progress", (value) => {
+      progressBar.clear();
+      progressBar.fillStyle(0xffffff, 1);
+      progressBar.fillRoundedRect(
+        width / 2 - 160,
+        height / 2 - 15,
+        320 * value,
+        30,
+        8
+      );
+    });
+
+    this.load.once("complete", () => {
+      progressBar.destroy();
+      progressBox.destroy();
+      loadingText.destroy();
+    });
+
     preloadAssets(this);
   }
 
+  // ======================
+  // CREATE: INTRO + UI
+  // ======================
   create() {
-    const width  = this.scale.width  || 900;
-    const height = this.scale.height || 600;
+    const width  = this.scale.width;
+    const height = this.scale.height;
 
-    // Kích thước thiết kế gốc
-    const DESIGN_WIDTH  = 2160;
-    const DESIGN_HEIGHT = 1620;
+    // Kích thước file design background
+    const DESIGN_W = 2160;
+    const DESIGN_H = 1620;
 
-    // ====== VÙNG QUAN TRỌNG ======
-    // Không mất chữ phía trên
-    const SAFE_TOP = 240;
-
-    // Không mất chân nhân vật phía dưới
-    const SAFE_BOTTOM = 315;
-
-    // Vùng quan trọng tổng hợp (Area Of Interest)
-    const AOI_TOP = SAFE_TOP;
-    const AOI_BOTTOM = DESIGN_HEIGHT - SAFE_BOTTOM;
-    const AOI_CENTER = (AOI_TOP + AOI_BOTTOM) / 2; // px trên file gốc
-
-    // Danh sách background intro
+    // ====== BACKGROUND: COVER, GHIM MÉP TRÊN (KHÔNG BAO GIỜ MẤT CHỮ) ======
     const INTRO_BG_KEYS = [
-      "intro_bg_1","intro_bg_2","intro_bg_3",
-      "intro_bg_4","intro_bg_5","intro_bg_6","intro_bg_7"
+      "intro_bg_1",
+      "intro_bg_2",
+      "intro_bg_3",
+      "intro_bg_4",
+      "intro_bg_5",
+      "intro_bg_6",
+      "intro_bg_7",
     ];
     const chosenBG = Phaser.Utils.Array.GetRandom(INTRO_BG_KEYS);
 
-    // ====== FIT WIDTH ======
-    const scale = width / DESIGN_WIDTH;
-    const scaledH = DESIGN_HEIGHT * scale; // nếu cần dùng sau
+    // scale cover: luôn kín màn, không méo
+    const scaleBG = Math.max(width / DESIGN_W, height / DESIGN_H);
 
-    // Tạo BG (anchor top để dễ tính toán crop)
-    const bg = this.add.image(width / 2, 0, chosenBG).setOrigin(0.5, 0);
-    bg.setScale(scale);
+    // 👇 KHÁC BIỆT CHÍNH Ở ĐÂY:
+    // - origin (0.5, 0) = neo theo mép TRÊN
+    // - y = 0  => mép trên hình luôn trùng mép trên màn → chữ phía trên không bao giờ bị cắt
+    const bg = this.add
+      .image(width / 2, 0, chosenBG)
+      .setOrigin(0.5, 0)
+      .setScale(scaleBG);
 
-    // ====== CĂN GIỮA VÙNG QUAN TRỌNG (CHỮ + NHÂN VẬT) ======
-    const screenCenterY = height / 2;
-    const AOI_center_scaled = AOI_CENTER * scale;
-
-    // Đặt Y của BG sao cho tâm vùng AOI nằm đúng giữa màn hình
-    bg.y = screenCenterY - AOI_center_scaled;
-
-    // Overlay làm sáng nhẹ toàn màn
-    this.add
-      .rectangle(0, 0, width, height, 0xffffff, 0.10)
-      .setOrigin(0, 0);
+    // Overlay sáng nhẹ
+    this.add.rectangle(0, 0, width, height, 0xffffff, 0.10).setOrigin(0, 0);
 
     // ======================
-    // CHUẨN BỊ NHẠC NỀN CHUNG
+    // NHẠC NỀN
     // ======================
     let bgm = this.sound.get("bgm_main");
     if (!bgm) {
-      // Chỉ add, CHƯA play để tránh bị chặn autoplay
       bgm = this.sound.add("bgm_main", {
         loop: true,
         volume: 0.28,
@@ -71,51 +99,42 @@ export default class OverlayScene extends Phaser.Scene {
     this.bgm = bgm;
 
     // ======================
-    // HÀM START GAME (GỌI KHI BÉ CHẠM LẦN ĐẦU)
+    // HÀM START GAME
     // ======================
     const startGame = () => {
-      // Chặn gọi nhiều lần nếu bé chạm liên tiếp
       if (this._started) return;
       this._started = true;
 
-      // Lần tương tác đầu tiên → được phép play audio
       if (this.bgm && !this.bgm.isPlaying) {
         this.bgm.play();
       }
 
-      // Phát voice intro nếu có
       if (this.sound && this.sound.play) {
         this.sound.play("voice_intro", { volume: 1 });
       }
 
-      // Vào GameScene, level đầu tiên là 0
       this.scene.start("GameScene", { level: 0 });
     };
 
     // ======================
-    // NÚT START Ở GIỮA BÊN DƯỚI MÀN HÌNH
+    // UI: NÚT BẮT ĐẦU + TEXT
+    // (GHIM THEO MÀN HÌNH, KHÔNG BỊ CROP)
     // ======================
+    const uiScale = Math.min(width / DESIGN_W, height / DESIGN_H);
 
-    // scale nút dựa trên width giống BG để đồng bộ tỉ lệ
-    const baseButtonScale = width / DESIGN_WIDTH; // có thể nhân thêm 1.1 / 0.9 nếu muốn to/nhỏ hơn
-
-    // margin từ mép dưới màn hình lên (theo thiết kế ~180px)
-    const BUTTON_BOTTOM_MARGIN_DESIGN = 180;
-    const buttonY = height - BUTTON_BOTTOM_MARGIN_DESIGN * baseButtonScale;
+    const buttonY = height * 0.78; // ~3/4 chiều cao màn
 
     const startButton = this.add
       .image(width / 2, buttonY, "btn_start")
-      .setOrigin(0.5, 0.5)
-      .setScale(baseButtonScale)
-      .setDepth(10);
+      .setOrigin(0.5)
+      .setScale(uiScale * 1.1)
+      .setDepth(10)
+      .setInteractive({ useHandCursor: true });
 
-    startButton.setInteractive({ useHandCursor: true });
-
-    // hiệu ứng hover nhẹ (desktop)
     startButton.on("pointerover", () => {
       this.tweens.add({
         targets: startButton,
-        scale: baseButtonScale * 1.05,
+        scale: uiScale * 1.16,
         duration: 120,
         ease: "Quad.easeOut",
       });
@@ -124,24 +143,22 @@ export default class OverlayScene extends Phaser.Scene {
     startButton.on("pointerout", () => {
       this.tweens.add({
         targets: startButton,
-        scale: baseButtonScale,
+        scale: uiScale * 1.1,
         duration: 120,
         ease: "Quad.easeOut",
       });
     });
 
-    // click vào nút -> start game
-    startButton.on("pointerdown", () => {
-      startGame();
-    });
+    startButton.on("pointerdown", startGame);
+
+    // Nếu sau này muốn thêm text "Nhấn để bắt đầu trò chơi" thì vẽ thêm ở đây:
+    // const infoText = this.add.text(...)
 
     // ======================
-    // (OPTION) Vẫn cho phép chạm bất kỳ đâu để start – cho chắc ăn trên mobile
+    // MOBILE: CHẠM BẤT KỲ ĐÂU CŨNG ĐƯỢC
     // ======================
-    this.input.once("pointerdown", (pointer, currentlyOver) => {
-      // nếu đã click nút rồi thì thôi
-      if (this._started) return;
-      startGame();
+    this.input.once("pointerdown", () => {
+      if (!this._started) startGame();
     });
   }
 }
